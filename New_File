@@ -294,3 +294,4 @@ FROM		dbo.HospitalStaff
 -------------------------------------------------------------
 
 SELECT * FROM HospitalStaff
+GO
