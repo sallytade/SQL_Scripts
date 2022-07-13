@@ -1,1 +1,480 @@
 
+	---STORED PROCEDURES I----
+/*1. Name: CREATE PROCEDURE proc_TerritorySalesByYear
+	 a. Parameter: OrderYear (Passing Value)
+	 b. Display the Total sales by territory for the Year Parameter
+	   (The following is for the results set, which will be created in your statement in order
+		
+		to pass your parameter to receive the total sales by each territory)*/
+
+DROP PROC proc_TerritorySalesByYear
+
+CREATE PROCEDURE proc_TerritorySalesByYear
+@OrderYear Varchar (50)
+
+AS
+	       
+	SELECT			SUM (ST.SalesYTD) TotalSales, ST.[Name]--,--Year(SH.OrderDate)
+	FROM			[Sales].[SalesTerritory]ST
+	INNER JOIN		[Sales].[SalesOrderHeader] SH
+	ON				St.TerritoryID =SH.TerritoryID
+	WHERE			SH.OrderDate= @OrderYear 
+	GROUP BY		St.[Name]
+
+
+EXEC proc_TerritorySalesByYear '01/01/2013'
+
+======================================================
+--2 Name: CREATE PROCEDURE proc_SalesByTerritory
+	/*a. Parameter: Territory Name
+	(Passing Value)
+	b. Results set: Display Total sales by Year for the Territory Name Parameter
+	(The following is for the results set, which will be created in your statement in order
+	to pass your parameter to receive the total sales by each year) */
+
+	CREATE PROC Proc_TerritoryTop5Sales_ByProduct 
+	@TerritoryName VARCHAR (50)
+
+	AS
+
+	SELECT			SUM (ST.SalesYTD) TotalSales, Year (SH.OrderDate) SalesByYear
+	FROM			[Sales].[SalesTerritory]ST
+	INNER JOIN		[Sales].[SalesOrderHeader] SH
+	ON				St.TerritoryID =SH.TerritoryID
+	--WHERE			ST.[Name] = @TerritoryName
+	GROUP BY		year (SH.OrderDate)
+
+EXEC Proc_SalesByTerritory 'Northwest'
+
+--==============================================================
+--3. Name: CREATE PROCEDURE proc_TerritoryTop5Sales_ByProduct
+				/*a. Parameter: Territory Name
+				(Passing Value)
+				b. Results set: Top 5 Products by year
+				(The following is for the results set, which will be created 
+				in your statement in order to pass in Territory Name to receive 
+				the Top 5 Products sold (Sum of Line Total) by
+				each Year) */
+
+CREATE PROC Proc_TerritoryTop5SalesByProduct
+ (@TerritoryName VARCHAR (50))
+
+ AS
+ BEGIN 
+		SET NOCOUNT ON;
+
+
+		DECLARE @TopProducts TABLE (
+							 ProductID INT
+							,ProductName VARCHAR (50)
+							,TerritoryName VARCHAR (50)
+							,SalesByPrice MONEY 
+							,SalesByYear INT
+						   ) 
+ 
+		   DECLARE		 @StartYear INT
+           SET	         @StartYear = 
+							( 
+							SELECT MIN (YEAR(B.ORderDate))
+							FROM [Sales].[SalesOrderHeader] B
+						  )
+DECLARE			@EndYear	INT
+SET				@EndYear = (
+							SELECT MAX (YEAR(B.ORderDate))
+							FROM [Sales].[SalesOrderHeader] B
+							)
+WHILE		@StartYear<= @EndYear
+BEGIN 
+					  INSERT INTO	@TopProducts
+						
+						SELECT TOP 5 A.ProductID
+									,C.[Name]
+									,D.[Name]
+									,SUM (A.LineTotal) SalesByPrice
+									,YEAR(B.OrderDate) SalesByYear
+
+						FROM		Sales.SalesOrderDetail A
+						JOIN		Sales.SalesOrderHeader  B
+						ON			A.SalesOrderID= B.SalesOrderID
+
+						JOIN		Production.Product C
+						ON			A.ProductID = C.ProductID
+
+						JOIN		Sales.SalesTerritory D
+						ON			B.TerritoryID = D.TerritoryID
+						WHERE		YEAR (B.OrderDate) =@StartYear AND 
+									D.[Name] = @TerritoryName---Passing Para --where we have to provide a value at the Store Proc. 
+						GROUP BY	C.[Name], D.[Name], YEAR (B.OrderDate), A.ProductID
+
+						ORDER BY     4 DESC  --(ProductID 
+						SET			 @StartYear= (   
+													SELECT  MIN(YEAR(B.OrderDate))
+													FROM Sales.SalesOrderHeader B
+													WHERE YEAR (B.OrderDate) > @StartYear
+													
+												 )
+END 
+
+SELECT * FROM @TopProducts
+END
+GO
+	EXECUTE proc_TerritoryTop5Sales_ByProduct 'Germany' --THIS ONE RETURN TOP TWENTY  BUT THE NEXT ONE RETURN ONLY THE TOP 5 I	TRIED BOTH WAYS TO SEE WHAT YOU
+														 --think 
+--=========================================================================================
+ALTER PROC Proc_TerritoryTop5Sales_ByProductONE
+@Territroyname VARCHAR (50)
+
+       AS 
+
+			SELECT		 TOP 5 OD.ProductID,PP.[Name]ProductName,ST.[Name]TeritoryName
+						,YEAR (OH.OrderDate)SalesByYear,SUM(OD.LineTotal) SumofLineTotal 
+			FROM         [Sales].[SalesTerritory] ST
+			JOIN		 [Sales].[SalesOrderHeader] OH
+			ON           ST.TerritoryID =OH.TerritoryID
+			JOIN         [Sales].[SalesOrderDetail] OD
+			ON           OD.SalesOrderID=OH.SalesOrderID
+			JOIN         [Production].[Product] PP
+			ON           PP.ProductID = OD.ProductID
+			WHERE        @Territroyname = ST. [Name]
+			GROUP BY     OH.OrderDate,OD.ProductID, ST.[Name],pp.[Name]
+
+EXEC Proc_TerritoryTop5Sales_ByProductONE 'Germany'
+
+--==========================================================================================
+  
+--4. Stored Procedure with Output Parameters
+   
+--a.  Add a MgrID column to your emp table.
+
+			SELECT* FROM Emp
+			ALTER TABLE EMP
+			ADD MgrID INT 
+
+--b. Populate it accordingly using the integer data type and same number of characters as the empID column
+
+		UPDATE EMP SET MgrID = 1 WHERE empid =1
+		UPDATE EMP SET MgrID = 2 WHERE empid =2
+		UPDATE EMP SET MgrID = 3 WHERE empid =3
+		UPDATE EMP SET MgrID = 4 WHERE empid =4
+		UPDATE EMP SET MgrID = 5 WHERE empid =5
+		UPDATE EMP SET MgrID = 6 WHERE empid =6
+		UPDATE EMP SET MgrID = 7 WHERE empid =7
+		UPDATE EMP SET MgrID = 8 WHERE empid =8
+		UPDATE EMP SET MgrID = 9 WHERE empid =9
+		UPDATE EMP SET MgrID = 10 WHERE empid =10 
+----IN CASE YOU WANT TO USE THE TABLE HERE IS THE RECORDS 
+											/*SELECT 1, 'Mimi'	,1,1,	'Abi'		UNION 
+											SELECT 2, 'mame'	,2,2,	'Betty'		UNION 
+											SELECT 3, 'Ali'		,3,3,	'Matte'		UNION
+											SELECT 4, 'Aquila'	,4,4,	'David'		UNION
+											SELECT 5, 'Mola',	 5,5 ,	'Ahmed'		UNION
+											SELECT 6, 'Sisay'	,6,6,	'Mohamed'	UNION
+											SELECT 7, 'solomon'	,7,7,	'Belly'		UNION
+											SELECT 8, 'Kidus'	,8,8,	'John'		UNION
+											SELECT 9, 'Konjit',	 9,9,	'Sam'		UNION
+											SELECT 10,'Belain', 10,10	'KB'	    UNION */
+
+--c Build a SP that passes in empID and returns an output parameter of the mgrID - (Create
+	/*the SP and verify it works correctly) (Keep in mind that the mgrID will also be an individual’s
+	empID., since managers are also employees) */
+
+	ALTER PROC ManagerEmpID
+		(@EmpID INT,
+		 @MrgID INT OUT) 
+
+		AS 
+		   
+			SET @MrgID=		(	
+								SELECT		MgrID	
+								FROM		emp
+								WHERE		empid =@EmpID
+							)
+	
+		 DECLARE @MID INT
+		 EXEC ManagerEmpID 5  
+		,@MrgID= @MID OUTPUT --to capture the value of an outpur para, append out to local variable in the sproc execution 
+		 SELECT @MID
+		 --PRINT  @MID
+		 GO
+		 
+--/////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+--d.  (Start a New Query and separate it from the previous Stored Procedure) Declare an empid --int and manager_name Varchar(50) variabl
+																									---FOR THIS QUESTION I don't know what to separate 
+--																								are we createing a new StorProc  and what kind of variable 
+																								---are we expected to declare
+																								---I have put defferent ways of creating a variable since the question is not clear
+																								 --  i WANT TO CONTINUE TO THE NEXT PART THAT IS WHY I SUBMITED THIS. 
+	CREATE PROC Variables
+		
+		(@EmpID INT,
+		 @Manager_name VARCHAR (50)) 
+
+						--AS 
+		   
+						--	SET @MrgID=		(	
+						--						SELECT		MgrID	
+						--						FROM		emp
+						--						WHERE		empid =@EmpID
+						--					)
+	
+		 DECLARE @Empid INT
+		 DECLARE @Manager_name VARCHAR (50)
+
+
+						-- EXEC ManagerEmpID 5  
+						--,@MrgID= @MID OUTPUT --to capture the value of an outpur para, append out to local variable in the sproc execution 
+						-- SELECT @MID
+						-- --PRINT  @MID
+						-- GO
+
+--e.  Hard code your new empid variable and Pass it into your new SP to return the mgrid
+--(Use an actual empid in the variable location to test and Pass it into your new SP to return the mgrID)
+
+ CREATE PROC New_Proc
+		( 
+		  @empid INT,
+		  @mgrid  INT OUT
+		 
+		)
+ AS							
+							  SELECT	@mgrid=MgrID
+							  FROM		emp
+							  WHERE		empid= @empId				
+ 
+ DECLARE @ID INT
+ EXEC New_Proc 4
+	  --@empid=4 
+      ,@mgrid= @ID OUT
+ SELECT @ID MgrID
+ --PRINT @ID.
+ --=========================================================================================================================
+ --f.  Capture that mgrid in a variable and use that mgrid variable to determine the Managers
+			--name (Create another statement which locates the Manager’s Name by using mgrID)
+--  --f. Same as executing 4c but this time instead of printing your variable, Declare a second variable and set that variable to 
+--( SELECT EmpName FROM dbo.emp WHERE empid = @ManagerID (Note: @ManagerID is the same as the Declared variable that was used in 4c
+
+CREATE PROC ManagerName 
+				 (	
+					@EmpID INT,
+					@MName VARCHAR,
+					@MrgID INT OUT
+				 ) 
+ 
+	AS 
+			SET NOCOUNT ON
+			SET @MName	=(
+						SELECT Mgrname
+						FROM emp
+						WHERE empid = @MrgID
+					  ) 	
+			SET @MrgID=	  (	SELECT		Mgrname	
+							FROM		emp
+							WHERE		empid =@EmpID
+							)
+
+	DECLARE @MID INT
+	EXEC ManagerEmpID 5  
+	,@MrgID= @MID OUTPUT --to capture the value of an outpur para, append out to local variable in the sproc execution 
+	--SELECT @MID
+	PRINT  @MID  
+
+
+	DECLARE @MgrName VARCHAR (50)
+	SET     @MgrName = @MID 
+	--SELECT  @MgrName
+	PRINT @MgrName  
+--==================================================================================================================================
+--g.  Print the Managers name
+
+	ALTER PROC ManagerName12
+		(@EmpID INT,
+		 @MName VARCHAR  (50)OUT
+		-- @MrgID INT OUT
+		 ) 
+ 
+	AS 
+			SET NOCOUNT ON
+			
+						SELECT @MName=MgrName
+						FROM   emp
+						WHERE  empID = @empID
+			
+	DECLARE @MID NVARCHAR(50) 
+	EXEC  ManagerName12 6, 
+		   @MName = @MID OUT
+	     --,@MrgID= @MID OUTPUT --to capture the value of an outpur para, append out to local variable in the sproc execution 
+	  --SELECT @MID
+	PRINT  @MID
+
+
+	DECLARE @MgrName VARCHAR (50)
+	SET     @MgrName = @MID 
+	--SELECT  @MgrName
+	PRINT @MgrName
+--===============================================================================================================
+--/////////////////////////////////////////////////////////////////////////////////////////////
+									---STORED PROCEDURES II
+CREATE TABLE TableA
+(
+	Fild1 INT
+)
+INSERT INTO TableA
+	VALUES 
+		  (1), 
+		  (2), 
+		  (3), 
+		  (4), 
+		  (4),
+		  (5),
+		  (6)
+GO 
+CREATE TABLE TableB
+(
+	Fild1 INT
+)
+INSERT INTO TableB
+	VALUES 
+		  (2), 
+		  (5), 
+		  (7), 
+		  (6), 
+		  (3),
+		  (3),
+		  (9)
+GO
+
+--Display data from TableA where the values are identical in TableB.
+			SELECT	A.Fild1 
+			FROM	TableA A
+			JOIN	TableB  B
+			ON		A.Fild1 =B.Fild1
+			GO
+--2.Display data from TableA where the values are not available in TableB.
+			SELECT				A.Fild1 
+			FROM				TableA A
+			LEFT JOIN			TableB  B
+			ON					A.Fild1 =B.Fild1
+			GO
+--3. Display data from TableB Where the values are not available in TableA.
+			SELECT				B.Fild1 
+			FROM				TableA A
+			RIGHT JOIN			TableB  B
+			ON					A.Fild1 =B.Fild1		
+			GO
+--===============================================
+--4 /*Create a Stord Procedure that passes in the SalesOrderID as a parameter. 
+  /*This stored Procedure will return the SalesORderID, the Date of the transaction 
+  and count of how many times the item was purchased. */
+
+  SELECT * FROM AdventureWorks2019.Sales.SalesOrderHeader
+
+  CREATE PROC Sp_SalesOrderIdPerDateandPurchase
+  @SalesOrderID INT
+
+ AS
+		BEGIN 
+  
+			  SELECT OD.SalesOrderID, OH.OrderDate,COUNT(OD.OrderQty)OrderCount,OD.ProductID
+			  FROM Sales.SalesOrderHeader OH
+			  JOIN  [Sales].[SalesOrderDetail] OD
+			  ON OH.SalesOrderID =OD.SalesOrderID
+			  WHERE OH.SalesOrderID= @SalesOrderID
+			  GROUP BY OD.SalesOrderID, OD.OrderQty,OH.OrderDate,OD.ProductID
+			  ORDER BY  OD.ProductID
+
+		END 
+
+EXEC Sp_SalesOrderIdPerDateandPurchase '75123'
+--===================================================================-
+--5.Create a Stored Procedure that passes in the SalesOrderID as a parameter. This stored procedure will
+--return the SalesOrderID, Date of the transaction, shipping date, City and State.
+
+IF OBJECT_ID('SP_SalesorderDetail ', 'P') IS NOT NULL  
+    DROP PROCEDURE  SP_SalesorderDetail
+GO  
+CREATE PROC SP_SalesorderDetail 
+	@SalesOrderID INT
+  
+AS
+		SET NOCOUNT ON 
+			SELECT OH.SalesOrderID, OH.OrderDate,OH.ShipDate, PA.City, SP.[Name] [State]
+			FROM [Person].[Address] PA
+			JOIN [Person].[StateProvince] SP
+			ON PA.StateProvinceID =SP.StateProvinceID
+			JOIN [Sales].[SalesOrderHeader] OH
+			ON SP.TerritoryID =OH.TerritoryID
+			WHERE OH.SalesOrderID=@SalesOrderID
+			ORDER BY  Sp.[Name]
+
+ EXEC SP_SalesorderDetail '75123'
+
+ --===============================================================
+-- 6. Create a stored procedure that passes in the Territory Name as a parameter. This stored procedure will
+--return the Territory Group, CountryRegionCode, Count of SalesHeaders in 2001, and the Count of  SalesDetails in 2001
+
+  ALTER PROC  Stor_Proc_TerritoryGroup
+  @TerritroyName VARCHAR (25)
+
+  AS
+
+		SELECT ST.[Name] TerritoryGroup, ST.CountryRegionCode, COUNT(OH.SalesOrderID) SalesHeaderCount
+					,COUNT(OD.SalesOrderID) SalesOrderCount,YEAR (OH.OrderDate)OrderYear
+		FROM [Sales].[SalesOrderHeader] OH
+		JOIN  [Sales].[SalesOrderDetail] OD
+		ON OH.SalesOrderID= OD.SalesOrderID
+		JOIN  [Sales].[SalesTerritory] ST
+		ON ST.TerritoryID =OH.TerritoryID
+		WHERE YEAR (OH.OrderDate) = '2012' 
+		AND @TerritroyName  =ST.[Name]
+		GROUP BY OH.OrderDate,ST.CountryRegionCode,ST.[Name]
+
+ EXEC Stor_Proc_TerritoryGroup 'Germany'
+
+ --================================================================
+ --7.Create a stored procedure that passes in the Product name as a parameter. This stored procedure will
+     /*return the lowest price in History, Highest Price in History, difference between the two prices, Count of
+       SalesDetails and the Sum of LineTotal.*/
+
+IF OBJECT_ID('Stor_Proc_ProductPrice ', 'P') IS NOT NULL  
+    DROP PROCEDURE  Stor_Proc_ProductPrice
+
+CREATE PROC Stor_Proc_ProductPrice 
+@ProductName NVARCHAR (50)
+
+AS
+
+		SET NOCOUNT ON 
+
+	    SELECT PP.[Name] ProductName, MIN(UnitPrice) LowestPrice ,MAX(UnitPrice) HighestPrice 
+				,(MAX(UnitPrice)-MIN(UnitPrice)) PriceDiff ,COUNT(*) SalesCount, SUM (LineTotal) GrandLineTotal
+	   FROM [Sales].[SalesOrderDetail] OD
+	   JOIN  [Production].[Product] PP
+	   ON OD.ProductID =PP.ProductID
+	   WHERE PP.[Name] =  @ProductName
+	   GROUP BY PP.[Name]
+
+EXEC  Stor_Proc_ProductPrice 'Water Bottle - 30 oz.'
+
+--===========================================================================================
+--8. Create a SP that passes in the OrderYear as a parameter. This stored procedure will 
+/*return the Count of the SalesHeaders and SalesDetails for the OrderYear parameter.*/
+
+ALTER PROC Stor_Proc_OrderYearCount
+@OrderDate DATETIME 
+
+AS 
+
+		SET NOCOUNT ON 
+	   
+	   SELECT YEAR(OH.OrderDate) OrderDate, COUNT(OD.SalesOrderID)SalesHeaders, COUNT (OH.SalesOrderID) SalesDetails
+	   FROM [Sales].[SalesOrderDetail] OD
+	   JOIN [Sales].[SalesOrderHeader] OH
+	   ON OD.SalesOrderID =OH.SalesOrderID
+	   WHERE OH.OrderDate = @OrderDate
+	   GROUP BY  OH.OrderDate
+
+	EXEC Stor_Proc_OrderYearCount '2014'
+  --//////////////////////////////////////////////////////////////
+   
