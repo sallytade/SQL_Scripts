@@ -1,0 +1,119 @@
+
+         * Use the HumanResources.Employee Table in the Adventureworks Database  */
+
+
+
+/*
+1.	Create a UDF that accepts EmployeeID (2012: BusinessEntityID) and returns UserLoginID.  
+The UserLoginID is the last part of the LogID column.  It’s only the part that comes after the \
+*/
+	                    
+CREATE			FUNCTION FN_UserLoginID(@EmployeeID INT)
+RETURNS			VARCHAR(50)
+
+AS
+  
+	BEGIN
+	   
+	   RETURN (		
+					SELECT			RIGHT(LoginID, LEN(LoginID)-CHARINDEX('\', LoginID)) AS UserLoginID 
+					FROM			[HumanResources].[Employee]
+					WHERE			[BusinessEntityID] = @EmployeeID
+              )
+	END
+
+GO
+
+	
+SELECT         DBO.FN_UserLoginID(1)  AS  UserLoginID
+
+GO
+/************************************************************************************************/
+
+
+
+/*
+2. Create a UDF that accepts EmployeeID (2012: BusinessEntityID) and returns their age
+*/
+
+CREATE          FUNCTION FN_UserAge(@EmployeeID INT)
+RETURNS			INT
+
+AS
+  
+	BEGIN
+	   
+			RETURN (		
+						SELECT			DATEDIFF(YEAR, [BirthDate], GETDATE())
+						FROM			[HumanResources].[Employee]
+						WHERE			[BusinessEntityID] = @EmployeeID
+					)
+	END
+
+GO
+
+SELECT		DBO.FN_UserAge(4) AS UserAge
+
+GO
+
+/************************************************************************************************/
+
+
+
+
+/*
+3. Create a UDF that accepts the Gender and returns the avg VacationHours
+*/				
+
+CREATE			FUNCTION FN_AvgVacationHours(@Gender char(1))					
+RETURNS			INT
+
+AS
+	BEGIN
+			RETURN (
+						SELECT			AVG(VacationHours)
+						FROM			[HumanResources].[Employee]
+						WHERE			[Gender] =  @Gender
+						GROUP BY        [Gender]
+				   )
+END
+
+GO
+
+SELECT		DBO.FN_AvgVacationHours('M') AS AvgVacationHours
+
+GO
+
+/************************************************************************************************/
+
+
+
+/*
+4. Create a UDF that accepts ManagerID (2012: JobTitle) and returns all of that Managers 
+(2012: JobTitle)  Employee Information.
+a.	LoginID
+b.	Gender
+c.	HireDate
+*/
+
+
+CREATE			FUNCTION FN_EmployeeInformation(@ManagerID VARCHAR(50))
+RETURNS			TABLE
+
+AS
+
+			RETURN (
+						SELECT			LoginID, Gender, HireDate
+						FROM			[HumanResources].[Employee]
+						WHERE			JobTitle =  @ManagerID
+				   )
+	
+
+
+GO
+
+
+SELECT			*
+FROM			FN_EmployeeInformation('Research and Development Manager')
+
+GO
