@@ -1,0 +1,474 @@
+1.Create 10  TEMP TABLE using Adventureworks Database.
+	2. Create the same 10 tables as CTE’s.
+	3. Create the same 10 tables as TABLE VARIABLE.*/
+
+
+--Query 1. Must use the LIKE and BETWEEN operators
+---Temp table
+CREATE TABLE #SalesReason 
+	(
+	[SalesReasonID] INT  NOT NULL,
+	[Name] NVARCHAR(50) NOT NULL,
+	[ReasonType] NVARCHAR(50) NOT NULL,
+	)
+INSERT INTO #SalesReason
+
+SELECT  3,'Magazine Advertisement','Marketing'   UNION
+SELECT  4,'Television Advertisement','Marketing' UNION
+SELECT	7,'Demo Event',	'Marketing'				 UNION			  
+SELECT	8,'Sponsorship','Marketing'
+
+SELECT * FROM #SalesReason
+
+SELECT		SalesReasonID, [Name], ReasonType
+INTO		 #PurchasDetail 
+FROM		[Sales].[SalesReason]
+WHERE		SalesReasonID between 1 and 8
+AND		    ReasonType like 'Marketing'
+
+ SELECT * FROM #PurchasDetail 
+
+------------------------------------------------------------
+--Teble var.
+DECLARE @SalesReason  
+TABLE 
+		(
+			SReasonID  INT
+			,ReasonName	NVARCHAR (50)
+			,ReasonType	NVARCHAR  (50)
+	    )
+
+	INSERT INTO @SalesReason
+		
+		SELECT		SalesReasonID, [Name], ReasonType
+		FROM		[Sales].[SalesReason]
+		WHERE		SalesReasonID between 1 and 8
+		AND		    ReasonType like 'Marketing'
+
+SELECT * FROM @SalesReason
+
+--CTE
+WITH SalesReason  AS
+	(
+		SELECT		SalesReasonID, [Name], ReasonType
+		FROM		[Sales].[SalesReason]
+		WHERE		SalesReasonID between 1 and 8
+		AND		    ReasonType like 'Marketing'
+	)
+
+SELECT * FROM SalesReason
+-----------------------------------------------------------
+
+--2- Must ust the IN and NOTIN operators 
+
+---Temp Table 
+
+CREATE TABLE  #VolumeDiscount
+	(
+	[SpecialOfferID] [int]  NOT NULL, 
+	[Description] [nvarchar](255) NOT NULL,
+	[Type] [nvarchar](50) NOT NULL,
+	)
+	
+ INSERT INTO  #VolumeDiscount (SpecialOfferID,[Description], [Type])
+
+ SELECT 2,'Volume Discount 11 to 14','Volume Discount' UNION
+ SELECT 3,'Volume Discount 15 to 24','Volume Discount' UNION
+ SELECT 4,'Volume Discount 25 to 40','Volume Discount' UNION
+ SELECT 5,'Volume Discount 41 to 60','Volume Discount'
+
+ SELECT * FROM #VolumeDiscount
+
+ -----------------------------OR-------------------------------------
+--		SELECT	SpecialOfferID,[Description], [Type]
+--		INTO	#VolumeDiscount 
+--		FROM	[Sales].[SpecialOffer]
+--		WHERE	[Type] IN ('Volume Discount')
+--		AND		[Description] NOT IN ('Volume Discount over 60')
+
+--SELECT * FROM #VolumeDiscount
+
+-----------------------------------------------------------------------------------------------------
+---Table var.
+DECLARE	 @VolumeDiscount 
+TABLE 
+			(
+			   OfferID INT
+			  ,VolumeDiscount NVARCHAR (255)
+			  ,DiscountType	  NVARCHAR	(50)
+                     
+			)
+    INSERT INTO  @VolumeDiscount 
+
+			SELECT	SpecialOfferID,[Description], [Type]
+			FROM	[Sales].[SpecialOffer]
+			WHERE	[Type] IN ('Volume Discount')
+			   AND	[Description] NOT IN ('Volume Discount over 60')
+
+SELECT * FROM  @VolumeDiscount 
+
+--------------------------------------------------------------------------------------------------------
+--Commen Table Expression 
+
+WITH VolumeDiscount AS 
+					(
+						SELECT	SpecialOfferID,[Description], [Type]
+						FROM	[Sales].[SpecialOffer]
+						WHERE	[Type] IN ('Volume Discount')
+						AND	    [Description] NOT IN ('Volume Discount over 60')
+				     )
+SELECT * FROM VolumeDiscount
+---------------------------------------------------------------------------------------------------------
+
+-- 3. Must use a Group By Statement and 2 aggregates (Temp table should be built using SELECT INTO Statement
+--Temp tab. 
+
+SELECT			[Group] ,COUNT(*) Countries , SUM (SalesYTD) TotalYTD
+INTO			#SalesTerritory 
+FROM			[Sales].[SalesTerritory]
+GROUP BY		[Group]
+
+SELECT * FROM #SalesTerritory
+
+---------------------------------------------------------------------------------------------
+--Teble var.
+select * from [Sales].[SalesTerritory]
+
+	DECLARE @GrandTotal 
+	TABLE 
+					(  Continent NVARCHAR (50)
+					   ,Countries NVARCHAR (50)
+					   ,TotalYTD MONEY 
+					)
+	      INSERT INTO @GrandTotal
+
+						SELECT	 [Group] ,COUNT(*) Countries , SUM (SalesYTD) TotalYTD 
+						FROM	     [Sales].[SalesTerritory]
+						GROUP BY  [Group]
+
+	SELECT * FROM @GrandTotal
+
+---COMMEN TABLE EXPRESSION --------------------------------------------------------------------------
+--CTE
+  WITH GrandTotal AS
+			(
+				SELECT			[Group] ,COUNT(*) Countries , SUM (SalesYTD) TotalYTD 
+				FROM			[Sales].[SalesTerritory]
+				GROUP BY		[Group]
+			 )
+  SELECT * FROM GrandTotal
+
+-----------------------------------------------------------------------------------------------------
+
+-- Query 4 – Must use the UNION operator
+--Temp Teb.
+				
+		SELECT	BusinessEntityID,TerritoryID
+		INTO	#BusTerID
+		FROM	[Sales].[SalesPerson] 
+		UNION 
+		SELECT	BusinessEntityID,TerritoryID
+		FROM	[Sales].[SalesTerritoryHistory]
+
+	SELECT* FROM  #BusTerID
+
+----------------------------------------------------------------------------------------------------------
+--Table var.
+DECLARE @BusTerID
+TABLE 
+				( 
+				BussinessID INT
+				,TerritoryID	INT
+				)
+		INSERT INTO @BusTerID
+
+				SELECT BusinessEntityID,TerritoryID
+				FROM [Sales].[SalesPerson] 
+				UNION 
+				SELECT BusinessEntityID,TerritoryID
+				FROM [Sales].[SalesTerritoryHistory]
+
+SELECT * FROM @BusTerID 
+
+---------------------------------------------------------------------------------------------------------
+---CTE
+WITH  BusTerID AS 
+                (                  
+				SELECT BusinessEntityID,TerritoryID
+				FROM [Sales].[SalesPerson] 
+				UNION 
+				SELECT BusinessEntityID,TerritoryID
+				FROM [Sales].[SalesTerritoryHistory]
+				)
+
+SELECT * FROM BusTerID
+
+-----------------------------------------------------------------------------------------------------------
+--Query 5 – Must be built using at least one column that is a Primary Key with an Identity Column.
+---Temp tab.
+--drop table #SalesReasonType
+CREATE TABLE #SalesReasonType
+	(
+		SalesReasonID INT PRIMARY KEY  IDENTITY(1,1) NOT NULL,
+		[Name] NVARCHAR(50) NOT NULL,
+		ReasonType NVARCHAR(50) NOT NULL,
+	)
+
+ ---SET IDENTITY_INSERT #SalesReasonType 
+
+ INSERT INTO #SalesReasonType Values
+	 (	'Price','Other'	)
+	,(  'On Promotion',	'Promotion' )	
+	,(	'Magazine Advertisement','Marketing')
+	,(	'Television  Advertisement','Marketing')	
+	,(	'Manufacturer',	'Other'	)
+	,(  'Review', 'Other')
+	,(  'Demo Event',	'Marketing' )	
+	,(	'Sponsorship','Marketing'	)
+	,(  'Quality' ,	'Other'	)
+	,(	'Other',	'Other')	
+
+ SELECT* FROM #SalesReasonType
+-------------------------------------------------------------------------------------------
+---Teble var.
+ DECLARE @SalesReasonType
+ TABLE 
+		(
+		SReasonID INT PRIMARY KEY  IDENTITY(1,1) NOT NULL
+		,RName NVARCHAR(50) NOT NULL
+		,RType NVARCHAR(50) NOT NULL 
+		)
+	
+
+INSERT INTO @SalesReasonType
+		 
+		 SELECT [Name],ReasonType
+		 FROM   [Sales].[SalesReason]
+		   
+SELECT * FROM @SalesReasonType
+
+------------------------------------------------------------------------------------------
+--CTE
+WITH SalesReasonType AS
+		(
+		SELECT SalesReasonID, [Name],ReasonType
+		 FROM   [Sales].[SalesReason]
+		 )
+SELECT * FROM  SalesReasonType
+
+---------------------------------------------------------------------------------------------
+--Query 6 – Must be built using a WHERE clause and ORDER BY clause
+-- Temp Table
+
+SELECT		[Name],TaxRate
+INTO		#CanadianSalesReason
+FROM		[Sales].[SalesTaxRate]
+WHERE		[Name] like '%Canadian GST %'
+ORDER BY	TaxType
+
+SELECT		*
+FROM		 #CanadianSalesReason
+
+-----------------------------------------------------------------------------------------------
+--Teble Variable
+DECLARE @CanadianSalesReason
+TABLE		(
+			[Name] NVARCHAR (50)
+			,TaxRate MONEY  
+			)
+INSERT INTO @CanadianSalesReason
+
+			SELECT		[Name],TaxRate
+			FROM		[Sales].[SalesTaxRate]
+			WHERE		[Name] like '%Canadian GST %'
+			ORDER BY	TaxType
+
+SELECT      *
+FROM		@CanadianSalesReason
+------------------------------------------------------------------------------------------------
+--CTE
+WITH CanadianSalesReason AS
+		  (
+			SELECT		[Name],TaxRate
+			FROM		[Sales].[SalesTaxRate]
+			WHERE		[Name] like '%Canadian GST %'
+			--ORDER BY	TaxType
+		  )
+SELECT	 *
+FROM	 CanadianSalesReason
+------------------------------------------------------------------------------------------------
+
+--Query 7 – Must be built using a GROUP BY clause and HAVING Clause
+--Temp Tab.
+CREATE TABLE #SalesGrandTotal
+			(
+			OrderID INT
+			,OrderQty INT
+			,GrandTotal MONEY 
+			)
+INSERT INTO  #SalesGrandTotal
+
+SELECT	43659,	1,	10198.810400 UNION
+SELECT	43659,	2,	4090.361000  UNION
+SELECT	43659,	3,	6161.503200  UNION
+SELECT	43659,	4,	80.746000    UNION 
+SELECT	43659,	6,	34.200000 
+
+SELECT * FROM #SalesGrandTotal
+------------------------------------------------------------------------------------------------
+---Table Variable 
+DECLARE @SalesGrandTotal
+TABLE 
+			  (
+				 OrderID INT
+				,OrderQty INT
+				,GrandTotal MONEY 
+			  )
+
+		INSERT INTO @SalesGrandTotal
+			  
+				SELECT		SalesOrderID, OrderQty,SUM(LineTotal) GrandTotal
+				FROM		[Sales].[SalesOrderDetail]
+				WHERE		SalesOrderID =43659
+				GROUP BY	OrderQty, SalesOrderID
+				HAVING		OrderQty<10
+SELECT		* 
+FROM		@SalesGrandTotal
+-----------------------------------------------------------------------------------------------
+--CTE
+WItH SalesGrandTotal AS
+	   (
+		SELECT		SalesOrderID, OrderQty,SUM(LineTotal) GrandTotal
+		FROM		[Sales].[SalesOrderDetail]
+		WHERE		SalesOrderID =43659
+		GROUP BY	OrderQty, SalesOrderID
+		HAVING		OrderQty<10
+		)
+SELECT * FROM SalesGrandTotal
+
+-------------------------------------------------------------------------------------------------
+---Query 8 – Must be built using WHERE / GROUP BY / HAVING / ORDER BY clauses
+--TEMP TABLE
+ SELECT		TerritoryID ,SUM(TotalDue) GrandTotal 
+ INTO		#TerrirotyTotal
+ FROM		[Sales].[SalesOrderHeader]
+ WHERE		TerritoryID <=10
+ GROUP BY	TerritoryID
+ HAVING		SUM(TotalDue) > 4048
+ ORDER BY	GrandTotal DESC
+
+ SELECT * FROM #TerrirotyTotal
+
+---------------------------------------------------------------------------------------------------
+--Table vari.
+DECLARE @TerrirotyTotal
+TABLE
+		(
+		TerrID INT
+		,GrandTotal MONEY
+		)
+INSERT INTO @TerrirotyTotal
+
+		SELECT		TerritoryID ,SUM(TotalDue) GrandTotal 
+		FROM		[Sales].[SalesOrderHeader]
+		WHERE		TerritoryID <=10
+		GROUP BY	TerritoryID
+		HAVING		SUM(TotalDue) > 4048
+		ORDER BY	GrandTotal DESC
+
+SELECT * FROM @TerrirotyTotal
+
+-------------------------------------------------------------------------------------------------
+--CTE
+WITH TerrirotyTotal AS
+		(
+			SELECT		TerritoryID ,SUM(TotalDue) GrandTotal 
+			FROM		[Sales].[SalesOrderHeader]
+			WHERE		TerritoryID <=10
+			GROUP BY	TerritoryID
+			HAVING		SUM(TotalDue) > 4048
+			--ORDER BY	GrandTotal DESC
+		
+		)
+SELECT * FROM TerrirotyTotal
+
+--Query 9 – Must be built using 3 System Functions
+--Temp Table.
+
+SELECT		CreditCardID, CONCAT( ExpMonth,'/ ',ExpYear ) Expiration,
+			LEN(CardType) CardNoLength,RIGHT( CardNumber, 4) LastFourCardNo
+INTO		#CreditCard
+FROM		[Sales].[CreditCard]
+WHERE		CreditCardID <= 10	
+
+SELECT * FROM #CreditCard
+
+-----------------------------------------------------------------------------------------------
+--Table var.
+DECLARE @CreditCard
+TABLE
+		(
+		CreaditCardID	INT
+		,Expiration		NVARCHAR (25)
+		,CardNoLength	INT
+		,LasrFourCardNo NVARCHAR (25)
+		)
+INSERT INTO @CreditCard
+		SELECT		CreditCardID, CONCAT( ExpMonth,'/ ',ExpYear ) Expiration,
+			LEN(CardType) CardNoLength,RIGHT( CardNumber, 4) LastFourCardNo
+		FROM		[Sales].[CreditCard]
+		WHERE		CreditCardID <= 10	
+SELECT * FROM @CreditCard
+
+--------------------------------------------------------------------------------------------------
+----CTE
+
+WITH CreditCard AS
+		(
+			SELECT		CreditCardID, CONCAT( ExpMonth,'/ ',ExpYear ) Expiration,
+						LEN(CardType) CardNoLength,RIGHT( CardNumber, 4) LastFourCardNo
+			FROM		[Sales].[CreditCard]
+			WHERE		CreditCardID <= 10
+		)
+SELECT * FROM CreditCard
+
+---------------------------------------------------------------------------------------------------
+--Query 10 – Must be built using 3 other System Functions*/
+
+drop table #Prod
+	
+	SELECT	ProductID
+			, RIGHT (ProductNumber,LEN (ProductNumber)-CHARINDEX ('-',ProductNumber)) ProdNumber
+	INTO	#Prod
+	FROM	[Production].[Product]
+	WHERE	ProductID between 1 and 10
+
+SELECT * FROM #Prod
+
+---------------------------------------------------------------------------------------------------
+DECLARE @Prod
+TABLE 
+		(
+		  ProductID INT
+		  ,ProdNumber INT
+		)
+INSERT INTO @Prod
+
+			SELECT	ProductID
+			, RIGHT (ProductNumber,LEN (ProductNumber)-CHARINDEX ('-',ProductNumber)) ProdNumber
+			FROM	[Production].[Product]
+			WHERE	ProductID between 1 and 10
+
+SELECT * FROM @Prod
+
+-------------------------------------------------------------------------------------------------
+---CTE
+
+WITH Prod AS
+			(
+			 SELECT	ProductID
+					, RIGHT (ProductNumber,LEN (ProductNumber)-CHARINDEX ('-',ProductNumber)) ProdNumber
+			FROM	[Production].[Product]
+			WHERE	ProductID between 1 and 10
+			)
+SELECT * FROM Prod 
